@@ -337,6 +337,15 @@ async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Выбери раздел:",
         reply_markup=reply_markup
     )
+async def support(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    context.user_data["support_mode"] = True
+
+    await update.message.reply_text(
+        "🆘 Поддержка\n\n"
+        "Опишите проблему, вопрос или предложение одним сообщением.\n\n"
+        "Сообщение будет отправлено администратору."
+    )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -368,6 +377,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(logs) > 20:
         logs.pop(0)
 
+    support_mode = context.user_data.get("support_mode")
+
+    if support_mode:
+
+        context.user_data["support_mode"] = False
+
+        user_id = update.effective_user.id
+        username = update.effective_user.username
+
+        await context.bot.send_message(
+            chat_id=ADMIN_ID,
+            text=(
+                "🆘 SUPPORT\n\n"
+                f"👤 User ID: {user_id}\n"
+                f"🔗 Username: @{username}\n\n"
+                f"Сообщение:\n{text}"
+            )
+        )
+
+        await update.message.reply_text(
+            "✅ Сообщение отправлено администратору.\n\n"
+            "Спасибо за обратную связь!"
+        )
+
+        return
+    
     admin_mode = context.user_data.get("admin_mode")
 
     if admin_mode == "broadcast":
@@ -1810,6 +1845,7 @@ def main():
 
     # команда /start
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("support", support))
     app.add_handler(CommandHandler("admin", admin))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
